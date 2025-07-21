@@ -59,7 +59,7 @@ const Navbar: React.FC = () => {
           }}
           onClick={handleHomeClick}
         >
-          מערכת קניות - משרד הביטחון
+          מערכת קניות
         </Typography>
 
         {/* Navigation Buttons */}

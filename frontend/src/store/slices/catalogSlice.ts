@@ -1,11 +1,12 @@
 // src/store/slices/catalogSlice.ts
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import type { RootState } from '../index';
 import type { Product, Category } from '../../types';
 
 // API Base URL - .NET Backend
-const API_BASE_URL = 'https://localhost:5001/api';
+const API_BASE_URL = 'https://localhost:7066/api';
 
 // Async Thunks
 export const fetchCategories = createAsyncThunk(
