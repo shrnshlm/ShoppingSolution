@@ -153,12 +153,12 @@ orderSchema.pre('save', function(next) {
     let totalItems = 0;
     
     this.items.forEach(item => {
-        item.totalPrice = item.price * item.quantity;
+        item.totalPrice = item.price * item.quantity;  // מחשב אוטומטית
         totalAmount += item.totalPrice;
         totalItems += item.quantity;
     });
     
-    this.orderSummary.totalAmount = Math.round(totalAmount * 100) / 100; // Round to 2 decimals
+    this.orderSummary.totalAmount = Math.round(totalAmount * 100) / 100;
     this.orderSummary.totalItems = totalItems;
     
     next();

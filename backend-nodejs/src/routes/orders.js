@@ -36,11 +36,18 @@ const orderValidationSchema = Joi.object({
             categoryName: Joi.string().required(),
             price: Joi.number().positive().required(),
             quantity: Joi.number().integer().min(1).required(),
-            unit: Joi.string().default('יח׳')
+            unit: Joi.string().default('יח׳'),
+            totalPrice: Joi.number().positive().required() // ← הוסף את זה!
         })
     ).min(1).required().messages({
         'array.min': 'הזמנה חייבת להכיל לפחות מוצר אחד'
-    })
+    }),
+    
+    orderSummary: Joi.object({ // ← הוסף את כל הבלוק הזה!
+        totalItems: Joi.number().integer().min(1).required(),
+        totalAmount: Joi.number().positive().required(),
+        currency: Joi.string().default('ILS')
+    }).required()
 });
 
 // POST /api/orders - Create new order

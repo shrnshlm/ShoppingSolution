@@ -86,38 +86,65 @@ const OrderSummaryPage: React.FC = () => {
     }
   }, [submitSuccess, navigate]);
 
+  // בתחילת הקומפוננט OrderSummaryPage, הוסף:
+useEffect(() => {
+  console.log('Current customer info:', customerInfo);
+  console.log('Form errors:', formErrors);
+  console.log('Form touched:', formTouched);
+}, [customerInfo, formErrors, formTouched]);
+
   // Handle input changes
-  const handleInputChange = (field: string, value: string) => {
-    dispatch(updateCustomerInfo({ [field]: value }));
-    dispatch(setFieldTouched({ field, touched: true }));
-  };
+const handleInputChange = (field: string, value: string) => {
+  console.log(`Updating ${field}:`, value); // לdebug
+  dispatch(updateCustomerInfo({ [field]: value }));
+  dispatch(setFieldTouched({ field, touched: true }));
+};
 
-  // Handle form submission
-  const handleSubmitOrder = async () => {
-    // Validate form
-    const isValid = dispatch(validateForm()).payload;
-    
-    if (!isValid) {
-      return;
+// Handle form submission
+const handleSubmitOrder = async () => {
+  console.log('=== Submit Order Debug ===');
+  console.log('Customer info:', customerInfo);
+  
+  const { firstName, lastName, email, address } = customerInfo;
+  
+  if (!firstName.trim() || !lastName.trim() || !email.trim() || !address.trim()) {
+    alert('אנא מלא את כל השדות החובה');
+    return;
+  }
+
+  if (!email.includes('@')) {
+    alert('כתובת מייל לא תקינה');
+    return;
+  }
+
+  // שלח הכל כולל החישובים
+  const orderData = {
+    customerInfo: {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      address: address.trim(),
+    },
+    items: cartItems.map((item) => ({
+      productId: item.productId,
+      productName: item.productName,
+      categoryId: item.categoryId,
+      categoryName: item.categoryName,
+      price: item.price,
+      quantity: item.quantity,
+      unit: item.unit,
+      totalPrice: item.price * item.quantity, // חישוב מקומי
+    })),
+    orderSummary: {
+      totalItems: totalItems,
+      totalAmount: totalAmount,
+      currency: 'ILS'
     }
-
-    // Prepare order data
-    const orderData = {
-      customerInfo,
-      items: cartItems.map((item: CartItem) => ({
-        productId: item.productId,
-        productName: item.productName,
-        categoryId: item.categoryId,
-        categoryName: item.categoryName,
-        price: item.price,
-        quantity: item.quantity,
-        unit: item.unit,
-      })),
-    };
-
-    // Submit order
-    dispatch(submitOrder(orderData));
   };
+
+  console.log('✅ Sending complete order:', orderData);
+  dispatch(submitOrder(orderData));
+};
 
   // Handle back to shopping
   const handleBackToShopping = () => {
@@ -179,6 +206,7 @@ const OrderSummaryPage: React.FC = () => {
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
+                    required
                     label="שם פרטי *"
                     value={customerInfo.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
@@ -189,11 +217,11 @@ const OrderSummaryPage: React.FC = () => {
                     }}
                   />
                 </Grid>
-
                 {/* Last Name */}
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
+                    required
                     label="שם משפחה *"
                     value={customerInfo.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
@@ -209,6 +237,7 @@ const OrderSummaryPage: React.FC = () => {
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
+                    required
                     label="כתובת מייל *"
                     type="email"
                     value={customerInfo.email}
@@ -225,6 +254,7 @@ const OrderSummaryPage: React.FC = () => {
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
+                    required
                     label="כתובת מלאה *"
                     multiline
                     rows={3}
@@ -265,32 +295,29 @@ const OrderSummaryPage: React.FC = () => {
               </Typography>
 
               {/* Order Items */}
+              {/* Order Items */}
               <List sx={{ p: 0 }}>
                 {cartItems.map((item: CartItem, index: number) => (
                   <React.Fragment key={item.id}>
                     <ListItem sx={{ px: 0, py: 2 }}>
-                      <ListItemText
-                        primary={
-                          <Typography variant="subtitle2" fontWeight="bold">
-                            {item.productName}
+                      <Box sx={{ width: '100%' }}>
+                        <Typography variant="subtitle2" fontWeight="bold">
+                          {item.productName}
+                        </Typography>
+                        
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                          {item.categoryName}
+                        </Typography>
+
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2">
+                            {formatPrice(item.price)} × {item.quantity} {item.unit}
                           </Typography>
-                        }
-                        secondary={
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">
-                              {item.categoryName}
-                            </Typography>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-                              <Typography variant="body2">
-                                {formatPrice(item.price)} × {item.quantity} {item.unit}
-                              </Typography>
-                              <Typography variant="body2" fontWeight="bold">
-                                {formatPrice(item.totalPrice)}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        }
-                      />
+                          <Typography variant="body2" fontWeight="bold">
+                            {formatPrice(item.totalPrice)}
+                          </Typography>
+                        </Box>
+                      </Box>
                     </ListItem>
                     {index < cartItems.length - 1 && <Divider />}
                   </React.Fragment>

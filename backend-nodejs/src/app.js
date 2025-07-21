@@ -15,7 +15,13 @@ app.use(helmet());
 
 // CORS configuration for React frontend
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:5000', 'https://localhost:5001'],
+    origin: [
+        'http://localhost:3000', 
+        'http://localhost:5000', 
+        'https://localhost:5001',
+        'http://localhost:5173',    // ← הוסף את זה!
+        'https://localhost:5173'     // ← וגם את זה
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -31,10 +37,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // MongoDB connection
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/shopping_orders', {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
+        const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/shopping_orders');
         console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
         console.error('❌ MongoDB connection error:', error.message);
