@@ -1,8 +1,48 @@
-const express = require('express');
-const Joi = require('joi');
-const Order = require('../models/Order');
+import express, { Request, Response, Router } from 'express';
+import Joi from 'joi';
+import Order from '../models/Order';
 
-const router = express.Router();
+const router: Router = express.Router();
+
+// Interfaces for type safety
+interface CustomerInfo {
+    firstName: string;
+    lastName: string;
+    email: string;
+    address: string;
+}
+
+interface OrderItem {
+    productId: number;
+    productName: string;
+    categoryId: number;
+    categoryName: string;
+    price: number;
+    quantity: number;
+    unit: string;
+    totalPrice: number;
+}
+
+interface OrderSummary {
+    totalItems: number;
+    totalAmount: number;
+    currency: string;
+}
+
+interface CreateOrderRequest {
+    customerInfo: CustomerInfo;
+    items: OrderItem[];
+    orderSummary: OrderSummary;
+}
+
+interface PaginationQuery {
+    page?: string;
+    limit?: string;
+}
+
+interface UpdateStatusRequest {
+    status: string;
+}
 
 // Validation schema for order creation
 const orderValidationSchema = Joi.object({
@@ -37,13 +77,13 @@ const orderValidationSchema = Joi.object({
             price: Joi.number().positive().required(),
             quantity: Joi.number().integer().min(1).required(),
             unit: Joi.string().default('יח׳'),
-            totalPrice: Joi.number().positive().required() // ← הוסף את זה!
+            totalPrice: Joi.number().positive().required()
         })
     ).min(1).required().messages({
         'array.min': 'הזמנה חייבת להכיל לפחות מוצר אחד'
     }),
     
-    orderSummary: Joi.object({ // ← הוסף את כל הבלוק הזה!
+    orderSummary: Joi.object({
         totalItems: Joi.number().integer().min(1).required(),
         totalAmount: Joi.number().positive().required(),
         currency: Joi.string().default('ILS')
@@ -51,7 +91,7 @@ const orderValidationSchema = Joi.object({
 });
 
 // POST /api/orders - Create new order
-router.post('/', async (req, res) => {
+router.post('/', async (req: Request<{}, {}, CreateOrderRequest>, res: Response): Promise<void> => {
     try {
         console.log('📦 Received order request:', JSON.stringify(req.body, null, 2));
 
@@ -59,11 +99,12 @@ router.post('/', async (req, res) => {
         const { error, value } = orderValidationSchema.validate(req.body);
         if (error) {
             console.log('❌ Validation error:', error.details[0].message);
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'נתונים לא תקינים',
                 details: error.details[0].message
             });
+            return;
         }
 
         // Create new order
@@ -82,16 +123,17 @@ router.post('/', async (req, res) => {
             }
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Error creating order:', error);
         
         if (error.name === 'ValidationError') {
-            const errors = Object.values(error.errors).map(e => e.message);
-            return res.status(400).json({
+            const errors = Object.values(error.errors).map((e: any) => e.message);
+            res.status(400).json({
                 success: false,
                 error: 'נתונים לא תקינים',
                 details: errors
             });
+            return;
         }
 
         res.status(500).json({
@@ -103,11 +145,11 @@ router.post('/', async (req, res) => {
 });
 
 // GET /api/orders - Get all orders (with pagination)
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request<{}, {}, {}, PaginationQuery>, res: Response): Promise<void> => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
+        const page: number = parseInt(req.query.page || '1');
+        const limit: number = parseInt(req.query.limit || '10');
+        const skip: number = (page - 1) * limit;
 
         const orders = await Order.find()
             .sort({ orderDate: -1 })
@@ -116,8 +158,8 @@ router.get('/', async (req, res) => {
             .select('customerInfo.firstName customerInfo.lastName customerInfo.email orderSummary status orderDate')
             .lean();
 
-        const total = await Order.countDocuments();
-        const totalPages = Math.ceil(total / limit);
+        const total: number = await Order.countDocuments();
+        const totalPages: number = Math.ceil(total / limit);
 
         res.json({
             success: true,
@@ -136,7 +178,7 @@ router.get('/', async (req, res) => {
             }
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Error fetching orders:', error);
         res.status(500).json({
             success: false,
@@ -147,15 +189,16 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/orders/:id - Get specific order
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: Request<{ id: string }>, res: Response): Promise<void> => {
     try {
         const order = await Order.findById(req.params.id);
         
         if (!order) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 error: 'הזמנה לא נמצאה'
             });
+            return;
         }
 
         res.json({
@@ -163,14 +206,15 @@ router.get('/:id', async (req, res) => {
             data: order
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Error fetching order:', error);
         
         if (error.name === 'CastError') {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'מזהה הזמנה לא תקין'
             });
+            return;
         }
 
         res.status(500).json({
@@ -182,9 +226,9 @@ router.get('/:id', async (req, res) => {
 });
 
 // GET /api/orders/customer/:email - Get orders by customer email
-router.get('/customer/:email', async (req, res) => {
+router.get('/customer/:email', async (req: Request<{ email: string }>, res: Response): Promise<void> => {
     try {
-        const email = req.params.email.toLowerCase();
+        const email: string = req.params.email.toLowerCase();
         const orders = await Order.findByEmail(email);
 
         res.json({
@@ -196,7 +240,7 @@ router.get('/customer/:email', async (req, res) => {
             }
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Error fetching customer orders:', error);
         res.status(500).json({
             success: false,
@@ -207,17 +251,18 @@ router.get('/customer/:email', async (req, res) => {
 });
 
 // PUT /api/orders/:id/status - Update order status
-router.put('/:id/status', async (req, res) => {
+router.put('/:id/status', async (req: Request<{ id: string }, {}, UpdateStatusRequest>, res: Response): Promise<void> => {
     try {
         const { status } = req.body;
         const validStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
         
         if (!validStatuses.includes(status)) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'סטטוס לא תקין',
                 validStatuses
             });
+            return;
         }
 
         const order = await Order.findByIdAndUpdate(
@@ -227,10 +272,11 @@ router.put('/:id/status', async (req, res) => {
         );
 
         if (!order) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 error: 'הזמנה לא נמצאה'
             });
+            return;
         }
 
         res.json({
@@ -239,7 +285,7 @@ router.put('/:id/status', async (req, res) => {
             data: order.getSummary()
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Error updating order status:', error);
         res.status(500).json({
             success: false,
@@ -250,7 +296,7 @@ router.put('/:id/status', async (req, res) => {
 });
 
 // DELETE /api/orders/:id - Delete order (soft delete by changing status)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: Request<{ id: string }>, res: Response): Promise<void> => {
     try {
         const order = await Order.findByIdAndUpdate(
             req.params.id,
@@ -259,10 +305,11 @@ router.delete('/:id', async (req, res) => {
         );
 
         if (!order) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 error: 'הזמנה לא נמצאה'
             });
+            return;
         }
 
         res.json({
@@ -271,7 +318,7 @@ router.delete('/:id', async (req, res) => {
             data: order.getSummary()
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Error cancelling order:', error);
         res.status(500).json({
             success: false,
@@ -281,4 +328,8 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+export default router;
+
+// CommonJS compatibility
 module.exports = router;
+module.exports.default = router;

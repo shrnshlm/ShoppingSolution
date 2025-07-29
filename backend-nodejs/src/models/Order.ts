@@ -1,7 +1,62 @@
-const mongoose = require('mongoose');
+import mongoose, { Document, Schema, Model } from 'mongoose';
+
+// Interfaces for type safety
+export interface IOrderItem {
+    productId: number;
+    productName: string;
+    categoryId: number;
+    categoryName: string;
+    price: number;
+    quantity: number;
+    unit: string;
+    totalPrice: number;
+}
+
+export interface ICustomerInfo {
+    firstName: string;
+    lastName: string;
+    email: string;
+    address: string;
+    fullName?: string; // Virtual field
+}
+
+export interface IOrderSummary {
+    totalItems: number;
+    totalAmount: number;
+    currency: string;
+}
+
+export interface IOrderSummaryResponse {
+    orderNumber: string;
+    customerName: string;
+    totalItems: number;
+    totalAmount: number;
+    status: string;
+    orderDate: Date;
+}
+
+// Main Order interface
+export interface IOrder extends Document {
+    customerInfo: ICustomerInfo;
+    items: IOrderItem[];
+    orderSummary: IOrderSummary;
+    status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+    orderDate: Date;
+    updatedAt: Date;
+    orderNumber: string; // Virtual field
+    
+    // Instance methods
+    addItem(item: IOrderItem): Promise<IOrder>;
+    getSummary(): IOrderSummaryResponse;
+}
+
+// Static methods interface
+export interface IOrderModel extends Model<IOrder> {
+    findByEmail(email: string): Promise<IOrder[]>;
+}
 
 // Schema for order items
-const orderItemSchema = new mongoose.Schema({
+const orderItemSchema = new Schema<IOrderItem>({
     productId: {
         type: Number,
         required: true
@@ -43,7 +98,7 @@ const orderItemSchema = new mongoose.Schema({
 }, { _id: false });
 
 // Main order schema
-const orderSchema = new mongoose.Schema({
+const orderSchema = new Schema<IOrder>({
     // Customer details
     customerInfo: {
         firstName: {
@@ -81,7 +136,7 @@ const orderSchema = new mongoose.Schema({
         type: [orderItemSchema],
         required: true,
         validate: {
-            validator: function(items) {
+            validator: function(items: IOrderItem[]): boolean {
                 return items && items.length > 0;
             },
             message: 'הזמנה חייבת להכיל לפחות מוצר אחד'
@@ -130,12 +185,12 @@ const orderSchema = new mongoose.Schema({
 });
 
 // Virtual for order number (formatted ID)
-orderSchema.virtual('orderNumber').get(function() {
+orderSchema.virtual('orderNumber').get(function(this: IOrder): string {
     return `ORD-${this._id.toString().slice(-8).toUpperCase()}`;
 });
 
 // Virtual for full customer name
-orderSchema.virtual('customerInfo.fullName').get(function() {
+orderSchema.virtual('customerInfo.fullName').get(function(this: IOrder): string {
     return `${this.customerInfo.firstName} ${this.customerInfo.lastName}`;
 });
 
@@ -145,14 +200,14 @@ orderSchema.index({ orderDate: -1 });
 orderSchema.index({ status: 1 });
 
 // Pre-save middleware to update timestamps and calculate totals
-orderSchema.pre('save', function(next) {
+orderSchema.pre<IOrder>('save', function(next) {
     this.updatedAt = new Date();
     
     // Calculate total amount and items
     let totalAmount = 0;
     let totalItems = 0;
     
-    this.items.forEach(item => {
+    this.items.forEach((item: IOrderItem) => {
         item.totalPrice = item.price * item.quantity;  // מחשב אוטומטית
         totalAmount += item.totalPrice;
         totalItems += item.quantity;
@@ -165,21 +220,21 @@ orderSchema.pre('save', function(next) {
 });
 
 // Static method to find orders by email
-orderSchema.statics.findByEmail = function(email) {
+orderSchema.statics.findByEmail = function(email: string): Promise<IOrder[]> {
     return this.find({ 'customerInfo.email': email }).sort({ orderDate: -1 });
 };
 
 // Instance method to add item to order
-orderSchema.methods.addItem = function(item) {
+orderSchema.methods.addItem = function(this: IOrder, item: IOrderItem): Promise<IOrder> {
     this.items.push(item);
     return this.save();
 };
 
 // Instance method to get order summary
-orderSchema.methods.getSummary = function() {
+orderSchema.methods.getSummary = function(this: IOrder): IOrderSummaryResponse {
     return {
         orderNumber: this.orderNumber,
-        customerName: this.customerInfo.fullName,
+        customerName: this.customerInfo.fullName || `${this.customerInfo.firstName} ${this.customerInfo.lastName}`,
         totalItems: this.orderSummary.totalItems,
         totalAmount: this.orderSummary.totalAmount,
         status: this.status,
@@ -187,6 +242,6 @@ orderSchema.methods.getSummary = function() {
     };
 };
 
-const Order = mongoose.model('Order', orderSchema);
+const Order = mongoose.model<IOrder, IOrderModel>('Order', orderSchema);
 
-module.exports = Order;
+export default Order;
