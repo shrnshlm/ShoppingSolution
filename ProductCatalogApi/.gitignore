@@ -28,3 +28,11 @@ packages/
 
 # Visual Studio cache/options
 .vs/
+
+# Database files (SQLite)
+*.db
+*.db-shm
+*.db-wal
+
+# User secrets and sensitive config
+appsettings.Development.json
