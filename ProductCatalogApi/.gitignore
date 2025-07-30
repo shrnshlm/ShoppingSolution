@@ -1,0 +1,30 @@
+﻿# ===== קיים =====
+node_modules/
+*/node_modules/
+bin/
+obj/
+*.user
+*.dll
+*.pdb
+.env
+.env.local
+.vscode/
+.vs/
+*.log
+
+# ===== הוסף את זה =====
+# Visual Studio backup files
+*.csproj.Backup.tmp
+*.Backup.tmp
+*.tmp
+
+# NuGet packages
+packages/
+*.nuget.props
+*.nuget.targets
+
+# MSBuild Binary and Structured Log
+*.binlog
+
+# Visual Studio cache/options
+.vs/
