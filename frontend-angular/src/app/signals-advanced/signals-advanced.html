@@ -1,0 +1,130 @@
+<div class="container">
+  <h1>Advanced Angular Signals - Users & Posts</h1>
+
+  <!-- Loading & Error States -->
+  <div class="status-bar">
+    <div *ngIf="anyLoading()" class="loading">
+      <span>Loading...</span>
+      <div class="spinner"></div>
+    </div>
+    <div *ngIf="error()" class="error">
+      Error: {{ error()?.message }}
+      <button (click)="clearError()">✕</button>
+    </div>
+  </div>
+
+  <!-- User Selection -->
+  <div class="section">
+    <h2>Users ({{ totalUsers() }})</h2>
+    <div class="controls">
+      <button (click)="loadUsers()" [disabled]="loading().users">
+        {{ loading().users ? 'Loading...' : 'Load Users' }}
+      </button>
+      <button (click)="clearUsers()" [disabled]="totalUsers() === 0">
+        Clear Users
+      </button>
+    </div>
+
+    <div class="user-grid" *ngIf="users().length > 0">
+      <div 
+        *ngFor="let user of users()" 
+        class="user-card"
+        [class.selected]="selectedUserId() === user.id"
+        (click)="selectUser(user.id)"
+      >
+        <h3>{{ user.name }}</h3>
+        <p>{{ user.email }}</p>
+        <small>{{ user.company.name }}</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Selected User Posts -->
+  <div class="section" *ngIf="selectedUser()">
+    <h2>Posts by {{ selectedUser()?.name }} ({{ userPosts().length }})</h2>
+    
+    <div class="controls">
+      <button (click)="loadUserPosts()" [disabled]="loading().posts">
+        {{ loading().posts ? 'Loading Posts...' : 'Load Posts' }}
+      </button>
+    </div>
+
+    <div class="posts-container">
+      <div *ngFor="let post of userPosts()" class="post-card">
+        <h4>{{ post.title }}</h4>
+        <p>{{ post.body }}</p>
+        <small>Post #{{ post.id }}</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create New Post Form -->
+  <div class="section" *ngIf="selectedUser()">
+    <h2>Create New Post for {{ selectedUser()?.name }}</h2>
+    
+    <form [formGroup]="postForm" (ngSubmit)="createPost()" class="post-form">
+      <div class="form-group">
+        <label for="title">Title:</label>
+        <input 
+          id="title"
+          type="text" 
+          formControlName="title"
+          [class.error]="postForm.get('title')?.invalid && postForm.get('title')?.touched"
+        >
+        <div *ngIf="postForm.get('title')?.invalid && postForm.get('title')?.touched" class="field-error">
+          Title is required (min 5 characters)
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="body">Content:</label>
+        <textarea 
+          id="body"
+          formControlName="body"
+          rows="4"
+          [class.error]="postForm.get('body')?.invalid && postForm.get('body')?.touched"
+        ></textarea>
+        <div *ngIf="postForm.get('body')?.invalid && postForm.get('body')?.touched" class="field-error">
+          Content is required (min 10 characters)
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          [disabled]="postForm.invalid || loading().creating"
+        >
+          {{ loading().creating ? 'Creating...' : 'Create Post' }}
+        </button>
+        <button type="button" (click)="resetForm()">Reset</button>
+      </div>
+    </form>
+
+    <!-- Form State Debug -->
+    <div class="debug-info">
+      <h4>Form State:</h4>
+      <p>Valid: {{ postForm.valid }}</p>
+      <p>Touched: {{ postForm.touched }}</p>
+      <p>Value: {{ formValue() | json }}</p>
+    </div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="section stats">
+    <h2>Statistics</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-value">{{ totalUsers() }}</span>
+        <span class="stat-label">Total Users</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">{{ totalPosts() }}</span>
+        <span class="stat-label">Total Posts</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">{{ avgPostsPerUser() }}</span>
+        <span class="stat-label">Avg Posts/User</span>
+      </div>
+    </div>
+  </div>
+</div>

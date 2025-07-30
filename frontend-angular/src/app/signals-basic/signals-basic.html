@@ -1,0 +1,101 @@
+<div class="signals-container">
+  <h2>Basic Angular Signals</h2>
+
+  <!-- Counter Example -->
+  <div class="section">
+    <h3>🔢 Simple Counter Signal</h3>
+    <div class="counter-display">
+      <span class="count">{{ count() }}</span>
+    </div>
+    <div class="controls">
+      <button (click)="increment()">+1</button>
+      <button (click)="decrement()">-1</button>
+      <button (click)="reset()">Reset</button>
+    </div>
+  </div>
+
+  <!-- Computed Signals -->
+  <div class="section">
+    <h3>🧮 Computed Signals</h3>
+    <div class="computed-display">
+      <div class="computed-item">
+        <span class="label">Double:</span>
+        <span class="value">{{ doubleCount() }}</span>
+      </div>
+      <div class="computed-item">
+        <span class="label">Square:</span>
+        <span class="value">{{ squareCount() }}</span>
+      </div>
+      <div class="computed-item">
+        <span class="label">Is Even:</span>
+        <span class="value" [class.yes]="isEven()" [class.no]="!isEven()">
+          {{ isEven() ? 'Yes ✅' : 'No ❌' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- String Signals -->
+  <div class="section">
+    <h3>📝 Text Input Signals</h3>
+    <div class="input-group">
+      <label>First Name:</label>
+      <input 
+        type="text" 
+        [value]="firstName()" 
+        (input)="updateFirstName($event)"
+        placeholder="Enter first name"
+      >
+    </div>
+    <div class="input-group">
+      <label>Last Name:</label>
+      <input 
+        type="text" 
+        [value]="lastName()" 
+        (input)="updateLastName($event)"
+        placeholder="Enter last name"
+      >
+    </div>
+    <div class="result">
+      <strong>Full Name: {{ fullName() }}</strong>
+    </div>
+  </div>
+
+  <!-- Array Signals -->
+  <div class="section">
+    <h3>📋 Array Signals (Todo List)</h3>
+    <div class="todo-input">
+      <input 
+        #todoInput
+        type="text" 
+        placeholder="Add a new todo..."
+        (keyup.enter)="addTodo(todoInput.value); todoInput.value = ''"
+      >
+      <button (click)="addTodo(todoInput.value); todoInput.value = ''">
+        Add Todo
+      </button>
+    </div>
+    
+    <div class="todo-list">
+      <div 
+        *ngFor="let todo of todos(); let i = index" 
+        class="todo-item"
+        [class.completed]="todo.completed"
+      >
+        <input 
+          type="checkbox" 
+          [checked]="todo.completed"
+          (change)="toggleTodo(i)"
+        >
+        <span class="todo-text">{{ todo.text }}</span>
+        <button class="delete-btn" (click)="removeTodo(i)">🗑️</button>
+      </div>
+    </div>
+    
+    <div class="todo-stats">
+      <span>Total: {{ todoCount() }}</span>
+      <span>Completed: {{ completedCount() }}</span>
+      <span>Remaining: {{ remainingCount() }}</span>
+    </div>
+  </div>
+</div>
