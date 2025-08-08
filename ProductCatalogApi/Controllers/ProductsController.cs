@@ -2,13 +2,16 @@
 using Microsoft.EntityFrameworkCore;
 using ProductCatalogApi.Data;
 using ProductCatalogApi.DTOs;
+using System.ComponentModel.DataAnnotations;
 
 namespace ProductCatalogApi.Controllers
 {
-
-
+    /// <summary>
+    /// Products management controller for the shopping catalog
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
+    [Produces("application/json")]
     public class ProductsController : ControllerBase
     {
         private readonly ProductCatalogContext _context;
@@ -18,8 +21,15 @@ namespace ProductCatalogApi.Controllers
             _context = context;
         }
 
-        // GET: api/products
+        /// <summary>
+        /// Get all products
+        /// </summary>
+        /// <returns>List of all products in the catalog</returns>
+        /// <response code="200">Returns the list of products</response>
+        /// <response code="500">If there was an internal server error</response>
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<IEnumerable<ProductDto>>> GetProducts()
         {
             var products = await _context.Products

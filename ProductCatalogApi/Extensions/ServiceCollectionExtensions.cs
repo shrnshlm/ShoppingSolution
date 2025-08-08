@@ -63,8 +63,24 @@ namespace ProductCatalogApi.Extensions
                 {
                     Title = "Product Catalog API",
                     Version = "v1",
-                    Description = "API for managing product catalog"
+                    Description = "API for managing product catalog - Ministry of Defense Shopping Solution",
+                    Contact = new()
+                    {
+                        Name = "Development Team",
+                        Email = "dev@mod.gov.il"
+                    }
                 });
+
+                // Enable XML documentation
+                var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                if (File.Exists(xmlPath))
+                {
+                    c.IncludeXmlComments(xmlPath);
+                }
+
+                // Add security definition if needed
+                c.UseInlineDefinitionsForEnums();
             });
 
             return services;
@@ -78,10 +94,15 @@ namespace ProductCatalogApi.Extensions
                 {
                     policy.WithOrigins(
                         "http://localhost:5173",
-                        "http://localhost:3000"
+                        "http://localhost:5175",
+                        "http://localhost:3000",
+                        "https://localhost:5173",
+                        "https://localhost:5175",
+                        "https://localhost:3000"
                     )
                     .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    .AllowAnyMethod()
+                    .AllowCredentials();
                 });
             });
 

@@ -1,0 +1,138 @@
+version: '3.8'
+
+services:
+  # SQL Server Database
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: shopping-sqlserver
+    environment:
+      SA_PASSWORD: "YourStrong!Passw0rd"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Express"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - shopping-network
+    restart: unless-stopped
+
+  # MongoDB for Orders
+  mongodb:
+    image: mongo:7.0
+    container_name: shopping-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: shopping_orders
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - shopping-network
+    restart: unless-stopped
+
+  # .NET Product Catalog API
+  productcatalog-api:
+    build:
+      context: ./ProductCatalogApi
+      dockerfile: Dockerfile
+    container_name: shopping-productcatalog
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ProductCatalog;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=true;
+    ports:
+      - "5001:8080"
+    depends_on:
+      - sqlserver
+    networks:
+      - shopping-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Node.js Order Service
+  order-service:
+    build:
+      context: ./backend-nodejs
+      dockerfile: Dockerfile
+    container_name: shopping-orderservice
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/shopping_orders?authSource=admin
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongodb
+    networks:
+      - shopping-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # React Frontend with NGINX
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: shopping-frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - productcatalog-api
+      - order-service
+    networks:
+      - shopping-network
+    restart: unless-stopped
+
+  # NGINX Reverse Proxy (Additional Load Balancer)
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: shopping-nginx-proxy
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx-proxy.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - productcatalog-api
+      - order-service
+      - frontend
+    networks:
+      - shopping-network
+    restart: unless-stopped
+
+  # Redis for Caching (Additional Service)
+  redis:
+    image: redis:7.0-alpine
+    container_name: shopping-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - shopping-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+networks:
+  shopping-network:
+    driver: bridge
+    name: shopping-network
+
+volumes:
+  sqlserver_data:
+    name: shopping_sqlserver_data
+  mongodb_data:
+    name: shopping_mongodb_data
+  redis_data:
+    name: shopping_redis_data

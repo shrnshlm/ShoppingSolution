@@ -5,8 +5,12 @@ using ProductCatalogApi.DTOs;
 
 namespace ProductCatalogApi.Controllers
 {
+    /// <summary>
+    /// Categories management controller for the shopping catalog
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
+    [Produces("application/json")]
     public class CategoriesController : ControllerBase
     {
         private readonly ProductCatalogContext _context;
@@ -16,8 +20,15 @@ namespace ProductCatalogApi.Controllers
             _context = context;
         }
 
-        // GET: api/categories
+        /// <summary>
+        /// Get all product categories
+        /// </summary>
+        /// <returns>List of all categories with their products</returns>
+        /// <response code="200">Returns the list of categories</response>
+        /// <response code="500">If there was an internal server error</response>
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<CategoryDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<IEnumerable<CategoryDto>>> GetCategories()
         {
             var categories = await _context.Categories

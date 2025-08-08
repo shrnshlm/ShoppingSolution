@@ -1,0 +1,26 @@
+# Development override for Docker Compose
+version: '3.8'
+
+services:
+  productcatalog-api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    volumes:
+      - ./ProductCatalogApi:/app
+    ports:
+      - "5001:8080"
+
+  order-service:
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./backend-nodejs:/app
+    command: ["npm", "run", "dev"]
+
+  frontend:
+    volumes:
+      - ./frontend:/app
+    command: ["npm", "run", "dev"]
+    ports:
+      - "3000:80"

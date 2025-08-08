@@ -14,7 +14,10 @@ namespace ProductCatalogApi.Extensions
                 app.UseSwaggerUI(c =>
                 {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Product Catalog API v1");
-                    c.RoutePrefix = string.Empty; // Swagger at root
+                    c.RoutePrefix = "swagger"; // Swagger at /swagger
+                    c.DocumentTitle = "Product Catalog API";
+                    c.EnableDeepLinking();
+                    c.EnableTryItOutByDefault();
                 });
             }
 
